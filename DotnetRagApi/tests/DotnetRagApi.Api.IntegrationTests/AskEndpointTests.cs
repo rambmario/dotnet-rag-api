@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using DotnetRagApi.Api.Models;
 using DotnetRagApi.Application.Abstractions;
+using DotnetRagApi.Application.Interfaces;
 using DotnetRagApi.Application.Models;
 using DotnetRagApi.Domain.Entities;
 using Microsoft.AspNetCore.Hosting;
@@ -68,6 +69,9 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
         {
             services.RemoveAll<IAskUseCase>();
             services.AddScoped<IAskUseCase, FakeAskUseCase>();
+
+            services.RemoveAll<IIaConsultaRepository>();
+            services.AddScoped<IIaConsultaRepository, FakeIaConsultaRepository>();
         });
     }
 }
@@ -86,4 +90,13 @@ internal sealed class FakeAskUseCase : IAskUseCase
             ChunksUsados = new[] { "chunk-a", "chunk-b" }
         });
     }
+}
+
+internal sealed class FakeIaConsultaRepository : IIaConsultaRepository
+{
+    public Task<long> InsertAsync(IaConsulta entity, CancellationToken cancellationToken = default)
+        => Task.FromResult(1L);
+
+    public Task<IEnumerable<IaConsulta>> GetTopAsync(int top = 50, CancellationToken cancellationToken = default)
+        => Task.FromResult(Enumerable.Empty<IaConsulta>());
 }
