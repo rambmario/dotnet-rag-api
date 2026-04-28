@@ -1,0 +1,55 @@
+name: Monorepo CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  dotnet-build-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: DotnetRagApi
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore DotnetRagApi.slnx
+
+      - name: Build
+        run: dotnet build DotnetRagApi.slnx --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test DotnetRagApi.slnx --configuration Release --no-build --verbosity normal
+
+  python-smoke-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rag-service
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Syntax check
+        run: python -m py_compile app.py rag_service.py models.py file_loader.py

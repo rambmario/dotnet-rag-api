@@ -1,0 +1,58 @@
+# ------------------------------
+# .NET
+# ------------------------------
+**/bin/
+**/obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+
+# Test and coverage artifacts
+TestResults/
+*.trx
+coverage/
+*.coverage
+*.coveragexml
+
+# ------------------------------
+# Python
+# ------------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+ENV/
+
+# Packaging
+build/
+dist/
+*.egg-info/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# App settings (no subir datos reales)
+DotnetRagApi/**/appsettings.json
+DotnetRagApi/**/appsettings.*.json
+!DotnetRagApi/**/appsettings.example.json
+
+# ------------------------------
+# Editor / OS
+# ------------------------------
+.vscode/
+.claude/
+*.log
+logs/
+Thumbs.db
+Desktop.ini
