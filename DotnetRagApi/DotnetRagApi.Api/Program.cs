@@ -1,48 +1,30 @@
+using DotnetRagApi.Api.OpenApi;
 using DotnetRagApi.Api.Security;
 using DotnetRagApi.Application;
 using DotnetRagApi.Infrastructure;
 using DotnetRagApi.Infrastructure.Health;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.OpenApi.Models;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
+builder.Services.AddOpenApi(options =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo
+    options.AddDocumentTransformer((document, _, _) =>
     {
-        Title = ".NET 8 AI RAG API",
-        Version = "v1",
-        Description = "Clean Architecture Web API that orchestrates a Python RAG service and persists SQL Server audit logs."
-    });
-
-    options.AddSecurityDefinition(ApiKeyAuthenticationHandler.SchemeName, new OpenApiSecurityScheme
-    {
-        Description = $"API key authentication. Send your key in the `{ApiKeyAuthenticationHandler.HeaderName}` header.",
-        Name = ApiKeyAuthenticationHandler.HeaderName,
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = ApiKeyAuthenticationHandler.SchemeName
-    });
-
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
+        document.Info = new()
         {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = ApiKeyAuthenticationHandler.SchemeName
-                }
-            },
-            Array.Empty<string>()
-        }
+            Title = ".NET 10 AI RAG API",
+            Version = "v1",
+            Description =
+                "Clean Architecture Web API that orchestrates a Python RAG service and persists SQL Server audit logs."
+        };
+        return Task.CompletedTask;
     });
+    options.AddDocumentTransformer<ApiKeySecuritySchemeTransformer>();
 });
 
 builder.Services
@@ -80,13 +62,12 @@ var app = builder.Build();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
-if (app.Environment.IsDevelopment() || builder.Configuration.GetValue("Swagger:Enabled", true))
+if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
+    app.MapOpenApi();
+    app.MapScalarApiReference("/scalar/v1", options =>
     {
-        options.DocumentTitle = ".NET 8 AI RAG API";
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", ".NET 8 AI RAG API v1");
+        options.WithTitle(".NET 10 AI RAG API");
     });
 }
 

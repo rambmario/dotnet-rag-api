@@ -68,7 +68,6 @@ services:
       RagApi__BaseUrl: "http://rag-service:8000"
       RagApi__TimeoutSeconds: "60"
       Security__ApiKey: ${API_KEY:-change-me-demo-api-key}
-      Swagger__Enabled: "true"
     ports:
       - "5000:8080"
 

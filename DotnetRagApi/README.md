@@ -1,6 +1,6 @@
-# .NET 8 RAG API
+# .NET 10 RAG API
 
-AI Q&A API built with Clean Architecture on ASP.NET Core (.NET 8).
+AI Q&A API built with Clean Architecture on ASP.NET Core (.NET 10).
 
 This project is part of a portfolio-ready monorepo and demonstrates:
 
@@ -25,14 +25,14 @@ DotnetRagApi/
 
 ## Architecture Layers
 
-- **Api**: HTTP endpoints, DTO mapping, auth, Swagger, rate limiting.
+- **Api**: HTTP endpoints, DTO mapping, auth, OpenAPI/Scalar, rate limiting.
 - **Application**: use cases and application contracts (`AskUseCase` orchestrates RAG + audit persistence).
 - **Domain**: domain entities and core business objects.
 - **Infrastructure**: Python RAG HTTP client (resilience handler), SQL persistence, health checks.
 
 ## Requirements
 
-- .NET SDK 8+
+- .NET SDK 10+
 - SQL Server (LocalDB, full SQL Server, or Docker)
 - External Python RAG service (required for end-to-end calls)
 
@@ -44,7 +44,7 @@ From the repository root:
 docker compose up --build
 ```
 
-API: `http://localhost:5000/swagger`
+API docs: `http://localhost:5000/scalar/v1`
 
 ## Run Locally
 
@@ -58,10 +58,10 @@ dotnet build
 dotnet run --project .\DotnetRagApi.Api\DotnetRagApi.Api.csproj
 ```
 
-Swagger:
+Scalar (Development):
 
-- http://localhost:5000/swagger
-- https://localhost:5001/swagger
+- http://localhost:5000/scalar/v1
+- https://localhost:5001/scalar/v1
 
 ## Configuration
 
@@ -71,7 +71,6 @@ Swagger:
 | `Security:ApiKey` | Required `X-Api-Key` header value |
 | `RagApi:BaseUrl` | Python service base URL |
 | `RagApi:TimeoutSeconds` | HTTP timeout |
-| `Swagger:Enabled` | Toggle Swagger UI |
 | `DisableHttpsRedirection` | Useful in Docker/HTTP-only hosting |
 
 ## Testing

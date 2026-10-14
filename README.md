@@ -3,14 +3,14 @@
 [![Monorepo CI](https://github.com/rambmario/dotnet-rag-api/actions/workflows/ci.yml/badge.svg)](https://github.com/rambmario/dotnet-rag-api/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-AI Q&A system: Python RAG (FastAPI + OpenAI embeddings) + .NET 8 Clean Architecture API + SQL Server logging + xUnit/pytest + Docker Compose + GitHub Actions CI.
+AI Q&A system: Python RAG (FastAPI + OpenAI embeddings) + .NET 10 Clean Architecture API + SQL Server logging + xUnit/pytest + Docker Compose + GitHub Actions CI.
 
 Portfolio project showing how to integrate AI capabilities into a production-style .NET backend.
 
 ## Highlights
 
 - Python Retrieval-Augmented Generation with OpenAI embeddings (keyword fallback).
-- .NET 8 Web API structured with Clean Architecture.
+- .NET 10 Web API structured with Clean Architecture.
 - API key authentication, ProblemDetails, rate limiting, and health checks.
 - HTTP orchestration with Polly-based resilience on the RAG client.
 - SQL Server persistence for consultation audit logs.
@@ -29,7 +29,7 @@ This project demonstrates AI integration on top of a production-grade .NET backe
 ```text
 dotnet-rag-api/
 |-- rag-service/        # Python FastAPI RAG service
-|-- DotnetRagApi/       # .NET 8 API + Clean Architecture layers + tests
+|-- DotnetRagApi/       # .NET 10 API + Clean Architecture layers + tests
 |-- docker/             # SQL init scripts for Compose
 |-- docs/               # Architecture diagram
 |-- docker-compose.yml
@@ -39,7 +39,7 @@ dotnet-rag-api/
 ## Tech Stack
 
 - Python, FastAPI, OpenAI SDK (embeddings + chat), python-dotenv, pytest
-- .NET 8, ASP.NET Core Web API, Dapper
+- .NET 10, ASP.NET Core Web API, Dapper
 - SQL Server
 - Docker Compose
 - xUnit + coverlet, GitHub Actions
@@ -69,7 +69,7 @@ docker compose up --build
 
 Then open:
 
-- Swagger: `http://localhost:5000/swagger`
+- Scalar: `http://localhost:5000/scalar/v1`
 - Health: `http://localhost:5000/health`
 - Readiness: `http://localhost:5000/health/ready`
 
@@ -92,7 +92,7 @@ curl -X POST http://localhost:5000/api/ask \
 
 ### Prerequisites
 
-- .NET SDK 8+
+- .NET SDK 10+
 - Python 3.10+
 - SQL Server LocalDB / SQL Server / Docker SQL
 - OpenAI API key
