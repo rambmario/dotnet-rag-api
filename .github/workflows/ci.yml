@@ -71,4 +71,7 @@ jobs:
         run: python -m py_compile app.py rag_service.py models.py file_loader.py
 
       - name: Unit tests
+        env:
+          # Importing rag_service constructs an OpenAI client; tests never call the API.
+          OPENAI_API_KEY: sk-ci-dummy-not-used
         run: pytest -q
