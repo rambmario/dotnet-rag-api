@@ -1,0 +1,76 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: dotnet-rag-sql
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Your_strong_Password123"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sql_data:/var/opt/mssql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P Your_strong_Password123 -C -Q 'SELECT 1' || exit 1"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  sql-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: dotnet-rag-sql-init
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    volumes:
+      - ./DotnetRagApi/database/create-database.sql:/scripts/create-database.sql:ro
+      - ./docker/init-db.sh:/scripts/init-db.sh:ro
+    entrypoint: ["/bin/bash", "/scripts/init-db.sh"]
+    environment:
+      MSSQL_HOST: sqlserver
+      MSSQL_SA_PASSWORD: "Your_strong_Password123"
+    restart: "no"
+
+  rag-service:
+    build:
+      context: ./rag-service
+    container_name: dotnet-rag-python
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      RAG_RETRIEVAL_MODE: ${RAG_RETRIEVAL_MODE:-embeddings}
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/rag/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  api:
+    build:
+      context: ./DotnetRagApi
+      dockerfile: DotnetRagApi.Api/Dockerfile
+    container_name: dotnet-rag-api
+    depends_on:
+      sql-init:
+        condition: service_completed_successfully
+      rag-service:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      DisableHttpsRedirection: "true"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=DotnetRagApiDb;User Id=sa;Password=Your_strong_Password123;TrustServerCertificate=True;"
+      RagApi__BaseUrl: "http://rag-service:8000"
+      RagApi__TimeoutSeconds: "60"
+      Security__ApiKey: ${API_KEY:-change-me-demo-api-key}
+      Swagger__Enabled: "true"
+    ports:
+      - "5000:8080"
+
+volumes:
+  sql_data:

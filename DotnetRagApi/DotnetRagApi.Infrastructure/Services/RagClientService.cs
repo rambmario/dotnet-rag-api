@@ -30,8 +30,8 @@ public sealed class RagClientService : IRagService
 
         if (!response.IsSuccessStatusCode)
         {
-            var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new ApplicationException($"Error llamando a Python RAG. Status: {(int)response.StatusCode}. Body: {errorBody}");
+            throw new HttpRequestException(
+                $"Error calling Python RAG service. Status: {(int)response.StatusCode}.");
         }
 
         var options = new JsonSerializerOptions
@@ -43,7 +43,7 @@ public sealed class RagClientService : IRagService
 
         if (result is null)
         {
-            throw new ApplicationException("La respuesta del servicio Python fue nula.");
+            throw new InvalidOperationException("La respuesta del servicio Python fue nula.");
         }
 
         return new AskAnswer

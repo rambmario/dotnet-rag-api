@@ -31,10 +31,23 @@ jobs:
       - name: Build
         run: dotnet build DotnetRagApi.slnx --configuration Release --no-restore
 
-      - name: Test
-        run: dotnet test DotnetRagApi.slnx --configuration Release --no-build --verbosity normal
+      - name: Test with coverage
+        run: >
+          dotnet test DotnetRagApi.slnx
+          --configuration Release
+          --no-build
+          --verbosity normal
+          --collect:"XPlat Code Coverage"
+          --results-directory ./TestResults
 
-  python-smoke-check:
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotnet-coverage
+          path: DotnetRagApi/TestResults/**/coverage.cobertura.xml
+          if-no-files-found: warn
+
+  python-test:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -56,3 +69,6 @@ jobs:
 
       - name: Syntax check
         run: python -m py_compile app.py rag_service.py models.py file_loader.py
+
+      - name: Unit tests
+        run: pytest -q

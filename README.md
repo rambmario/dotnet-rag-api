@@ -1,16 +1,21 @@
 # AI RAG .NET + Python Monorepo
 
-AI Q&A system: Python RAG (FastAPI + OpenAI) + .NET 8 Clean Architecture API + SQL Server logging + xUnit tests + GitHub Actions CI.
+[![Monorepo CI](https://github.com/rambmario/dotnet-rag-api/actions/workflows/ci.yml/badge.svg)](https://github.com/rambmario/dotnet-rag-api/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Recruiter-facing portfolio project showing how to integrate AI capabilities into a production-style .NET backend.
+AI Q&A system: Python RAG (FastAPI + OpenAI embeddings) + .NET 8 Clean Architecture API + SQL Server logging + xUnit/pytest + Docker Compose + GitHub Actions CI.
+
+Portfolio project showing how to integrate AI capabilities into a production-style .NET backend.
 
 ## Highlights
 
-- Python Retrieval-Augmented Generation service built with FastAPI and OpenAI.
+- Python Retrieval-Augmented Generation with OpenAI embeddings (keyword fallback).
 - .NET 8 Web API structured with Clean Architecture.
-- HTTP orchestration between Python and .NET components.
+- API key authentication, ProblemDetails, rate limiting, and health checks.
+- HTTP orchestration with Polly-based resilience on the RAG client.
 - SQL Server persistence for consultation audit logs.
-- Unit and integration tests with CI validation.
+- Unit/integration tests and CI coverage artifacts.
+- One-command local stack via Docker Compose.
 
 ## Built by
 
@@ -22,45 +27,77 @@ This project demonstrates AI integration on top of a production-grade .NET backe
 ## Repository Structure
 
 ```text
-IA/
+dotnet-rag-api/
 |-- rag-service/        # Python FastAPI RAG service
-`-- DotnetRagApi/          # .NET 8 API + Clean Architecture layers + tests
+|-- DotnetRagApi/       # .NET 8 API + Clean Architecture layers + tests
+|-- docker/             # SQL init scripts for Compose
+|-- docs/               # Architecture diagram
+|-- docker-compose.yml
+`-- LICENSE
 ```
 
 ## Tech Stack
 
-- Python, FastAPI, OpenAI SDK, python-dotenv
-- .NET 8, ASP.NET Core Web API
-- SQL Server (LocalDB by default)
-- xUnit for tests
+- Python, FastAPI, OpenAI SDK (embeddings + chat), python-dotenv, pytest
+- .NET 8, ASP.NET Core Web API, Dapper
+- SQL Server
+- Docker Compose
+- xUnit + coverlet, GitHub Actions
 
 ## Architecture Overview
 
-1. Client sends a question to the .NET endpoint (`POST /api/ask`).
-2. .NET application invokes the Python RAG service (`POST /rag/ask`).
-3. Python service retrieves relevant context from `conocimiento.txt` and calls an LLM.
-4. Response returns to .NET and is persisted in SQL Server.
-5. Logs can be queried from `GET /api/logs`.
+1. Client sends a question to the .NET endpoint (`POST /api/ask`) with `X-Api-Key`.
+2. Application use case invokes the Python RAG service (`POST /rag/ask`).
+3. Python retrieves relevant context with embeddings (or keyword fallback) and calls an LLM.
+4. Response returns to .NET and the use case persists an audit row in SQL Server.
+5. Logs can be queried from `GET /api/logs` (authenticated).
 
 ## Architecture
 
 ![Architecture diagram](docs/architecture.svg)
 
-## Prerequisites
+## Quick Start with Docker Compose
+
+Prerequisites: Docker Desktop, an OpenAI API key.
+
+```powershell
+copy .env.example .env
+# edit .env and set OPENAI_API_KEY
+
+docker compose up --build
+```
+
+Then open:
+
+- Swagger: `http://localhost:5000/swagger`
+- Health: `http://localhost:5000/health`
+- Readiness: `http://localhost:5000/health/ready`
+
+Default API key (override with `API_KEY` in `.env`):
+
+```text
+change-me-demo-api-key
+```
+
+Example request:
+
+```bash
+curl -X POST http://localhost:5000/api/ask \
+  -H "Content-Type: application/json" \
+  -H "X-Api-Key: change-me-demo-api-key" \
+  -d "{\"pregunta\":\"What is retrieval augmented generation?\",\"usuario\":\"demo\",\"rol\":\"user\",\"topN\":2}"
+```
+
+## Manual Local Setup
+
+### Prerequisites
 
 - .NET SDK 8+
 - Python 3.10+
-- SQL Server LocalDB or SQL Server instance
+- SQL Server LocalDB / SQL Server / Docker SQL
 - OpenAI API key
 
-## Quick Start
-
-1. Start the Python RAG service.
-2. Create the SQL Server database with the provided script.
-3. Run the .NET API.
-4. Test the flow through Swagger or `POST /api/ask`.
-
-## 1) Run the Python RAG Service
+### 1) Run the Python RAG Service
 
 From `rag-service`:
 
@@ -68,99 +105,72 @@ From `rag-service`:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+copy .env.example .env
 ```
 
-Create a `.env` file in `rag-service`:
-
-```env
-OPENAI_API_KEY=your_openai_api_key_here
-```
-
-Start the service:
+Start:
 
 ```powershell
 uvicorn app:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-Health endpoint:
+### 2) Create the SQL database
 
-- `GET http://127.0.0.1:8000/rag/health`
-
-## 2) Run the .NET API
-
-Before starting the API, create the SQL database used for audit logs.
-
-Database script:
+Run:
 
 - `DotnetRagApi/database/create-database.sql`
 
-Default database name:
+### 3) Run the .NET API
 
-- `DotnetRagApiDb`
-
-Run the script in SQL Server Management Studio or with `sqlcmd` against your LocalDB / SQL Server instance.
-
-From `DotnetRagApi`:
-
-```powershell
-dotnet restore
-dotnet build
-dotnet run --project .\DotnetRagApi.Api\DotnetRagApi.Api.csproj
-```
-
-Swagger:
-
-- `http://localhost:5000/swagger`
-- `https://localhost:5001/swagger`
-
-## 3) Configure the .NET API
-
-File: `DotnetRagApi/DotnetRagApi.Api/appsettings.json`
-
-Check these values:
+Copy `DotnetRagApi/DotnetRagApi.Api/appsettings.example.json` to `appsettings.json` and set:
 
 - `ConnectionStrings:DefaultConnection`
-- `RagApi:BaseUrl` (default: `http://127.0.0.1:8000`)
-- `RagApi:TimeoutSeconds`
-
-Important:
-
-- The API does not create the database automatically.
-- The schema expected by the repository is `dbo.DotnetRagApiLogs`.
-- If you change the database name in the script, keep `ConnectionStrings:DefaultConnection` aligned.
-
-## 4) Run Tests
-
-From `DotnetRagApi`:
+- `Security:ApiKey`
+- `RagApi:BaseUrl`
 
 ```powershell
-dotnet test .\DotnetRagApi.slnx
+cd DotnetRagApi
+dotnet run --project .\DotnetRagApi.Api\DotnetRagApi.Api.csproj
 ```
 
 ## API Endpoints
 
-- `POST /api/ask`
-- `GET /api/logs?top=50`
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| `POST` | `/api/ask` | `X-Api-Key` | Ask a question through RAG |
+| `GET` | `/api/logs?top=50` | `X-Api-Key` | Latest audit logs (`top` clamped 1..100) |
+| `GET` | `/health` | No | Liveness |
+| `GET` | `/health/ready` | No | SQL + Python readiness |
 
-Example request:
+## Tests
 
-```json
-{
-	"pregunta": "What is retrieval augmented generation?",
-	"usuario": "recruiter",
-	"rol": "user",
-	"topN": 2
-}
+.NET:
+
+```powershell
+cd DotnetRagApi
+dotnet test .\DotnetRagApi.slnx
+```
+
+Python:
+
+```powershell
+cd rag-service
+pytest -q
 ```
 
 ## Why It Works As A Portfolio Project
 
 - Demonstrates practical AI integration instead of isolated toy logic.
-- Applies Clean Architecture to keep business logic testable.
-- Shows cross-language integration (Python + .NET).
-- Includes automated tests and persistence concerns.
+- Applies Clean Architecture so business orchestration stays testable.
+- Shows cross-language integration (Python + .NET) with resiliency and health checks.
+- Includes authentication, Docker packaging, automated tests, and CI.
 
 ## Notes
 
-- Some domain and DTO fields intentionally use Spanish naming (`pregunta`, `respuesta`) to match the business vocabulary and data contracts.
-- For production hardening, next steps would include authentication, resiliency policies, and CI/CD deployment automation.
+- Domain/DTO fields intentionally use Spanish naming (`pregunta`, `respuesta`) to match the business vocabulary.
+- Retrieval defaults to OpenAI embeddings (`RAG_RETRIEVAL_MODE=embeddings`) with keyword fallback.
+- For cloud hosting, the Compose services map cleanly to Azure Container Apps / App Service + Azure SQL.
+
+## License
+
+MIT - see [LICENSE](LICENSE).

@@ -1,11 +1,14 @@
 using DotnetRagApi.Application.Abstractions;
 using DotnetRagApi.Application.Interfaces;
+using DotnetRagApi.Infrastructure.Health;
 using DotnetRagApi.Infrastructure.Options;
 using DotnetRagApi.Infrastructure.Persistence;
 using DotnetRagApi.Infrastructure.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Options;
+using Polly;
 
 namespace DotnetRagApi.Infrastructure;
 
@@ -15,21 +18,35 @@ public static class DependencyInjection
     {
         services.Configure<RagApiOptions>(configuration.GetSection(RagApiOptions.SectionName));
 
+        services.AddHttpClient("RagHealth")
+            .ConfigureHttpClient(client => client.Timeout = TimeSpan.FromSeconds(5));
+
         services.AddHttpClient<IRagService, RagClientService>((serviceProvider, client) =>
-        {
-            var options = serviceProvider.GetRequiredService<IOptions<RagApiOptions>>().Value;
+            {
+                var options = serviceProvider.GetRequiredService<IOptions<RagApiOptions>>().Value;
 
-            var baseUrl = string.IsNullOrWhiteSpace(options.BaseUrl)
-                ? "http://127.0.0.1:8000"
-                : options.BaseUrl;
+                var baseUrl = string.IsNullOrWhiteSpace(options.BaseUrl)
+                    ? "http://127.0.0.1:8000"
+                    : options.BaseUrl;
 
-            var timeoutSeconds = options.TimeoutSeconds <= 0 ? 60 : options.TimeoutSeconds;
+                var timeoutSeconds = options.TimeoutSeconds <= 0 ? 60 : options.TimeoutSeconds;
 
-            client.BaseAddress = new Uri(baseUrl);
-            client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
-        });
+                client.BaseAddress = new Uri(baseUrl);
+                client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
+            })
+            .AddStandardResilienceHandler(options =>
+            {
+                options.Retry.MaxRetryAttempts = 3;
+                options.Retry.Delay = TimeSpan.FromMilliseconds(200);
+                options.Retry.BackoffType = DelayBackoffType.Exponential;
+                options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(30);
+                options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(90);
+                options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(60);
+            });
 
         services.AddScoped<IIaConsultaRepository, IaConsultaRepository>();
+        services.AddSingleton<SqlServerHealthCheck>();
+        services.AddSingleton<RagServiceHealthCheck>();
 
         return services;
     }

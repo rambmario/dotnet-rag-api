@@ -2,6 +2,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/DotnetRagApi.Api.IntegrationTests/DotnetRagApi.Api.IntegrationTests.csproj" />
     <Project Path="tests/DotnetRagApi.Application.Tests/DotnetRagApi.Application.Tests.csproj" />
+    <Project Path="tests/DotnetRagApi.Infrastructure.Tests/DotnetRagApi.Infrastructure.Tests.csproj" />
   </Folder>
   <Project Path="DotnetRagApi.Api/DotnetRagApi.Api.csproj" />
   <Project Path="DotnetRagApi.Application/DotnetRagApi.Application.csproj" />
